@@ -1,4 +1,4 @@
-import { reactive, computed } from 'vue'
+import { defineStore } from 'pinia'
 
 export interface UserProfile {
   name: string
@@ -12,43 +12,42 @@ interface AuthState {
   token: string | null
 }
 
-// Initial state (loads from localStorage if available)
-const savedUser = localStorage.getItem('mf_user')
-const savedToken = localStorage.getItem('mf_token')
+const savedUser = localStorage.getItem('mf_pinia_user')
+const savedToken = localStorage.getItem('mf_pinia_token')
 
-const state = reactive<AuthState>({
-  user: savedUser ? JSON.parse(savedUser) : null,
-  token: savedToken || null
-})
+export const useAuthStore = defineStore('auth', {
+  state: (): AuthState => ({
+    user: savedUser ? JSON.parse(savedUser) : null,
+    token: savedToken || null
+  }),
 
-// Reactive Auth Store Object in HOST Shell
-export const authStore = {
-  // Readonly reactive getters
-  user: computed(() => state.user),
-  token: computed(() => state.token),
-  isLoggedIn: computed(() => !!state.token && !!state.user),
-
-  // Actions
-  login(email: string, role: UserProfile['role'] = 'Admin') {
-    const name = email.split('@')[0] || 'User'
-    const formattedName = name.charAt(0).toUpperCase() + name.slice(1)
-    
-    state.user = {
-      name: formattedName === 'Bahrul' ? 'Bahrul Developer' : formattedName,
-      email: email,
-      role: role,
-      avatar: '👨‍💻'
-    }
-    state.token = `jwt-token-host-${Date.now()}`
-
-    localStorage.setItem('mf_user', JSON.stringify(state.user))
-    localStorage.setItem('mf_token', state.token)
+  getters: {
+    isLoggedIn: (state): boolean => !!state.token && !!state.user,
+    currentUser: (state): UserProfile | null => state.user
   },
 
-  logout() {
-    state.user = null
-    state.token = null
-    localStorage.removeItem('mf_user')
-    localStorage.removeItem('mf_token')
+  actions: {
+    login(email: string, role: UserProfile['role'] = 'Admin') {
+      const name = email.split('@')[0] || 'User'
+      const formattedName = name.charAt(0).toUpperCase() + name.slice(1)
+      
+      this.user = {
+        name: formattedName === 'Bahrul' ? 'Bahrul Developer' : formattedName,
+        email: email,
+        role: role,
+        avatar: '👨‍💻'
+      }
+      this.token = `jwt-pinia-token-${Date.now()}`
+
+      localStorage.setItem('mf_pinia_user', JSON.stringify(this.user))
+      localStorage.setItem('mf_pinia_token', this.token)
+    },
+
+    logout() {
+      this.user = null
+      this.token = null
+      localStorage.removeItem('mf_pinia_user')
+      localStorage.removeItem('mf_pinia_token')
+    }
   }
-}
+})

@@ -7,7 +7,7 @@
           <span class="brand-icon">⚡</span>
           <span class="brand-text">MicroFrontend Host</span>
         </router-link>
-        <BaseBadge variant="primary" size="sm">v1.0.0</BaseBadge>
+        <BaseBadge variant="primary" size="sm">Pinia Powered</BaseBadge>
       </div>
 
       <nav class="navbar-nav">
@@ -28,12 +28,12 @@
 
       <div class="navbar-right">
         <!-- Auth User Profile / Login Controls -->
-        <template v-if="authStore.isLoggedIn.value">
+        <template v-if="authStore.isLoggedIn">
           <div class="user-pill">
-            <span class="user-avatar">{{ authStore.user.value?.avatar }}</span>
+            <span class="user-avatar">{{ authStore.user?.avatar }}</span>
             <div class="user-details">
-              <span class="user-name">{{ authStore.user.value?.name }}</span>
-              <BaseBadge variant="success" size="sm">{{ authStore.user.value?.role }}</BaseBadge>
+              <span class="user-name">{{ authStore.user?.name }}</span>
+              <BaseBadge variant="success" size="sm">{{ authStore.user?.role }}</BaseBadge>
             </div>
           </div>
           <BaseButton variant="danger" size="sm" icon="🚪" @click="handleLogout">
@@ -43,7 +43,7 @@
 
         <template v-else>
           <BaseButton variant="primary" size="sm" icon="🔑" @click="showLoginModal = true">
-            Login System
+            Login (Pinia)
           </BaseButton>
         </template>
       </div>
@@ -53,11 +53,11 @@
     <div v-if="showLoginModal" class="modal-overlay" @click.self="showLoginModal = false">
       <div class="modal-card">
         <div class="modal-header">
-          <h3>🔐 Login Pengguna (Shared Auth Store)</h3>
+          <h3>🍍 Login Pengguna (Pinia Shared Store)</h3>
           <button class="close-btn" @click="showLoginModal = false">✕</button>
         </div>
         <p class="modal-desc">
-          State autentikasi ini disimpan di HOST dan dibagikan secara <strong>reaktif ke seluruh Remote Modules</strong>.
+          State autentikasi ini dikelola oleh <strong>Pinia Store di HOST Shell</strong> dan dibagikan secara <strong>reaktif ke seluruh Remote Modules</strong>.
         </p>
 
         <form @submit.prevent="handleLogin" class="login-form">
@@ -79,7 +79,7 @@
 
           <div class="modal-actions">
             <BaseButton variant="ghost" type="button" @click="showLoginModal = false">Batal</BaseButton>
-            <BaseButton variant="primary" type="submit" icon="🚀">Masuk Sekarang</BaseButton>
+            <BaseButton variant="primary" type="submit" icon="🚀">Masuk via Pinia</BaseButton>
           </div>
         </form>
       </div>
@@ -100,7 +100,7 @@
         <span class="dot active"></span> HOST Shell
       </div>
       <div class="status-item">
-        <span class="dot active"></span> UI Module & Auth Store
+        <span class="dot active"></span> Pinia Auth Store (HOST)
       </div>
       <div class="status-item">
         <span class="dot active"></span> Remote Master
@@ -117,9 +117,10 @@ import { ref } from 'vue'
 import BaseButton from 'uiApp/Button'
 import BaseBadge from 'uiApp/Badge'
 import BaseInput from 'uiApp/Input'
-import { authStore } from './store/auth'
+import { useAuthStore } from './store/auth'
 import type { UserProfile } from './store/auth'
 
+const authStore = useAuthStore()
 const showLoginModal = ref(false)
 const loginEmail = ref('bahrul@developer.com')
 const loginRole = ref<UserProfile['role']>('Admin')

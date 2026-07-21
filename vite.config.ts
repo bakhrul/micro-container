@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
           salesApp: env.VITE_SALES_APP_URL || 'http://localhost:5002/assets/remoteEntry.js',
           uiApp: env.VITE_UI_APP_URL || 'https://leraning-micro-ui.netlify.app/assets/remoteEntry.js'
         },
-        shared: ['vue', 'vue-router']
+        shared: ['vue', 'vue-router', 'pinia']
       })
     ],
     server: {

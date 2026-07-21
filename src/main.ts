@@ -1,9 +1,13 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import { router } from './router'
 
+export const pinia = createPinia()
+
 async function bootstrap() {
   const app = createApp(App)
+  app.use(pinia)
 
   try {
     const [master, sales] = await Promise.all([
@@ -11,7 +15,6 @@ async function bootstrap() {
       import('salesApp/routes')
     ])
 
-    // Gabungkan remote routes
     if (master && master.routes) {
       master.routes.forEach(route => router.addRoute(route))
     } else if (master && master.default && master.default.routes) {
