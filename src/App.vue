@@ -117,8 +117,8 @@ import { ref } from 'vue'
 import BaseButton from 'uiApp/Button'
 import BaseBadge from 'uiApp/Badge'
 import BaseInput from 'uiApp/Input'
-import { authStore } from 'uiApp/auth'
-import type { UserProfile } from 'uiApp/auth'
+import { authStore } from './store/auth'
+import type { UserProfile } from './store/auth'
 
 const showLoginModal = ref(false)
 const loginEmail = ref('bahrul@developer.com')
