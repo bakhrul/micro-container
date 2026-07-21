@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import federation from '@originjs/vite-plugin-federation'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -20,6 +21,14 @@ export default defineConfig(({ mode }) => {
           uiApp: env.VITE_UI_APP_URL || 'https://leraning-micro-ui.netlify.app/assets/remoteEntry.js'
         },
         shared: ['vue', 'vue-router', 'pinia']
+      }),
+      // Bundle Visualizer Plugin (Generates interactive HTML bundle map in dist/stats.html)
+      visualizer({
+        filename: 'dist/stats.html',
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+        title: 'Microfrontend HOST Bundle Analysis'
       })
     ],
     server: {
@@ -41,7 +50,14 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      target: 'esnext'
+      target: 'esnext',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-vue-core': ['vue', 'vue-router', 'pinia']
+          }
+        }
+      }
     }
   }
 })
