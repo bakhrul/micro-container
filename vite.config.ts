@@ -22,7 +22,6 @@ export default defineConfig(({ mode }) => {
         },
         shared: ['vue', 'vue-router', 'pinia']
       }),
-      // Bundle Visualizer Plugin (Generates interactive HTML bundle map in dist/stats.html)
       visualizer({
         filename: 'dist/stats.html',
         open: false,
@@ -53,8 +52,12 @@ export default defineConfig(({ mode }) => {
       target: 'esnext',
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-vue-core': ['vue', 'vue-router', 'pinia']
+          // Dynamic Automatic Vendor Chunk Splitting Function
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              const packageName = id.toString().split('node_modules/')[1].split('/')[0]
+              return `vendor-${packageName.replace('@', '')}`
+            }
           }
         }
       }
