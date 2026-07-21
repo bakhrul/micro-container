@@ -16,38 +16,26 @@ export default defineConfig(({ mode }) => {
         name: 'hostApp',
         remotes: {
           masterApp: {
-            external: `new Promise(resolve => {
+            external: `new Promise((resolve, reject) => {
               const override = window.localStorage.getItem('override_masterApp');
               const url = override || '${masterDefault}';
-              const script = document.createElement('script');
-              script.src = url;
-              script.onload = () => resolve(window.masterApp);
-              script.onerror = () => resolve(window.masterApp);
-              document.head.appendChild(script);
+              import(/* @vite-ignore */ url).then(resolve).catch(reject);
             })`,
             externalType: 'promise'
           },
           salesApp: {
-            external: `new Promise(resolve => {
+            external: `new Promise((resolve, reject) => {
               const override = window.localStorage.getItem('override_salesApp');
               const url = override || '${salesDefault}';
-              const script = document.createElement('script');
-              script.src = url;
-              script.onload = () => resolve(window.salesApp);
-              script.onerror = () => resolve(window.salesApp);
-              document.head.appendChild(script);
+              import(/* @vite-ignore */ url).then(resolve).catch(reject);
             })`,
             externalType: 'promise'
           },
           uiApp: {
-            external: `new Promise(resolve => {
+            external: `new Promise((resolve, reject) => {
               const override = window.localStorage.getItem('override_uiApp');
               const url = override || '${uiDefault}';
-              const script = document.createElement('script');
-              script.src = url;
-              script.onload = () => resolve(window.uiApp);
-              script.onerror = () => resolve(window.uiApp);
-              document.head.appendChild(script);
+              import(/* @vite-ignore */ url).then(resolve).catch(reject);
             })`,
             externalType: 'promise'
           }
