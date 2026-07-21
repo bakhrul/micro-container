@@ -76,3 +76,20 @@ declare module 'uiApp/http' {
   export function handleApiError(error: any): ApiResponse<null>
   export function createSuccessResponse<T>(data: T, message?: string): ApiResponse<T>
 }
+
+declare module 'uiApp/auth' {
+  import { ComputedRef } from 'vue'
+  export interface UserProfile {
+    name: string
+    email: string
+    role: 'Admin' | 'Sales Manager' | 'Inventory Specialist' | 'Guest'
+    avatar: string
+  }
+  export const authStore: {
+    user: ComputedRef<UserProfile | null>
+    token: ComputedRef<string | null>
+    isLoggedIn: ComputedRef<boolean>
+    login: (email: string, role?: UserProfile['role']) => void
+    logout: () => void
+  }
+}

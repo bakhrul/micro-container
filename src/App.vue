@@ -27,11 +27,63 @@
       </nav>
 
       <div class="navbar-right">
-        <BaseButton variant="outline" size="sm" icon="🌐" @click="refreshState">
-          Refresh System
-        </BaseButton>
+        <!-- Auth User Profile / Login Controls -->
+        <template v-if="authStore.isLoggedIn.value">
+          <div class="user-pill">
+            <span class="user-avatar">{{ authStore.user.value?.avatar }}</span>
+            <div class="user-details">
+              <span class="user-name">{{ authStore.user.value?.name }}</span>
+              <BaseBadge variant="success" size="sm">{{ authStore.user.value?.role }}</BaseBadge>
+            </div>
+          </div>
+          <BaseButton variant="danger" size="sm" icon="🚪" @click="handleLogout">
+            Logout
+          </BaseButton>
+        </template>
+
+        <template v-else>
+          <BaseButton variant="primary" size="sm" icon="🔑" @click="showLoginModal = true">
+            Login System
+          </BaseButton>
+        </template>
       </div>
     </header>
+
+    <!-- Login Modal -->
+    <div v-if="showLoginModal" class="modal-overlay" @click.self="showLoginModal = false">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>🔐 Login Pengguna (Shared Auth Store)</h3>
+          <button class="close-btn" @click="showLoginModal = false">✕</button>
+        </div>
+        <p class="modal-desc">
+          State autentikasi ini disimpan di HOST dan dibagikan secara <strong>reaktif ke seluruh Remote Modules</strong>.
+        </p>
+
+        <form @submit.prevent="handleLogin" class="login-form">
+          <BaseInput
+            v-model="loginEmail"
+            label="Email Pengguna"
+            placeholder="bahrul@developer.com"
+            icon="✉️"
+          />
+          
+          <div class="form-group">
+            <label class="ui-input__label">Role / Hak Akses</label>
+            <select v-model="loginRole" class="role-select">
+              <option value="Admin">Admin (Full Access)</option>
+              <option value="Sales Manager">Sales Manager</option>
+              <option value="Inventory Specialist">Inventory Specialist</option>
+            </select>
+          </div>
+
+          <div class="modal-actions">
+            <BaseButton variant="ghost" type="button" @click="showLoginModal = false">Batal</BaseButton>
+            <BaseButton variant="primary" type="submit" icon="🚀">Masuk Sekarang</BaseButton>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- Main Content Area -->
     <main class="main-content">
@@ -48,7 +100,7 @@
         <span class="dot active"></span> HOST Shell
       </div>
       <div class="status-item">
-        <span class="dot active"></span> UI Module
+        <span class="dot active"></span> UI Module & Auth Store
       </div>
       <div class="status-item">
         <span class="dot active"></span> Remote Master
@@ -61,11 +113,24 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import BaseButton from 'uiApp/Button'
 import BaseBadge from 'uiApp/Badge'
+import BaseInput from 'uiApp/Input'
+import { authStore } from 'uiApp/auth'
+import type { UserProfile } from 'uiApp/auth'
 
-function refreshState() {
-  window.location.reload()
+const showLoginModal = ref(false)
+const loginEmail = ref('bahrul@developer.com')
+const loginRole = ref<UserProfile['role']>('Admin')
+
+function handleLogin() {
+  authStore.login(loginEmail.value, loginRole.value)
+  showLoginModal.value = false
+}
+
+function handleLogout() {
+  authStore.logout()
 }
 </script>
 
@@ -169,7 +234,63 @@ body {
 .navbar-right {
   display: flex;
   align-items: center;
+  gap: 0.875rem;
+}
+
+.user-pill {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.user-avatar {
+  font-size: 1.2rem;
+}
+
+.user-details {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.role-select {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9375rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #1f2937;
+  outline: none;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 .main-content {
@@ -208,6 +329,57 @@ body {
 .dot.active {
   background-color: #10b981;
   box-shadow: 0 0 6px #10b981;
+}
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-card {
+  background: #ffffff;
+  border-radius: 1rem;
+  width: 90%;
+  max-width: 480px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.modal-desc {
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0.75rem 0 1.25rem 0;
 }
 
 /* Transitions */
