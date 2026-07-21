@@ -7,7 +7,7 @@
           <span class="brand-icon">⚡</span>
           <span class="brand-text">MicroFrontend Host</span>
         </router-link>
-        <BaseBadge variant="primary" size="sm">Pinia Powered</BaseBadge>
+        <BaseBadge variant="primary" size="sm">OIDC SSO Enabled</BaseBadge>
       </div>
 
       <nav class="navbar-nav">
@@ -27,61 +27,93 @@
       </nav>
 
       <div class="navbar-right">
-        <!-- Auth User Profile / Login Controls -->
+        <!-- SSO User Profile / Login Controls -->
         <template v-if="authStore.isLoggedIn">
-          <div class="user-pill">
+          <div class="user-pill" @click="showTokenModal = true">
             <span class="user-avatar">{{ authStore.user?.avatar }}</span>
             <div class="user-details">
               <span class="user-name">{{ authStore.user?.name }}</span>
               <BaseBadge variant="success" size="sm">{{ authStore.user?.role }}</BaseBadge>
             </div>
           </div>
+          <BaseButton variant="outline" size="sm" icon="🔍" @click="showTokenModal = true">
+            JWT Tokens
+          </BaseButton>
           <BaseButton variant="danger" size="sm" icon="🚪" @click="handleLogout">
-            Logout
+            Single Logout (SLO)
           </BaseButton>
         </template>
 
         <template v-else>
-          <BaseButton variant="primary" size="sm" icon="🔑" @click="showLoginModal = true">
-            Login (Pinia)
+          <BaseButton variant="primary" size="sm" icon="🔐" @click="showSSOModal = true">
+            SSO Login (Keycloak)
           </BaseButton>
         </template>
       </div>
     </header>
 
-    <!-- Login Modal -->
-    <div v-if="showLoginModal" class="modal-overlay" @click.self="showLoginModal = false">
+    <!-- SSO Login Modal -->
+    <div v-if="showSSOModal" class="modal-overlay" @click.self="showSSOModal = false">
       <div class="modal-card">
         <div class="modal-header">
-          <h3>🍍 Login Pengguna (Pinia Shared Store)</h3>
-          <button class="close-btn" @click="showLoginModal = false">✕</button>
+          <h3>🔐 Keycloak / Auth0 SSO Identity Provider</h3>
+          <button class="close-btn" @click="showSSOModal = false">✕</button>
         </div>
         <p class="modal-desc">
-          State autentikasi ini dikelola oleh <strong>Pinia Store di HOST Shell</strong> dan dibagikan secara <strong>reaktif ke seluruh Remote Modules</strong>.
+          Single Sign-On (SSO) menggunakan protokol <strong>OpenID Connect (OIDC)</strong> dengan <strong>Authorization Code Flow + PKCE</strong>.
         </p>
 
-        <form @submit.prevent="handleLogin" class="login-form">
-          <BaseInput
-            v-model="loginEmail"
-            label="Email Pengguna"
-            placeholder="bahrul@developer.com"
-            icon="✉️"
-          />
-          
-          <div class="form-group">
-            <label class="ui-input__label">Role / Hak Akses</label>
-            <select v-model="loginRole" class="role-select">
-              <option value="Admin">Admin (Full Access)</option>
-              <option value="Sales Manager">Sales Manager</option>
-              <option value="Inventory Specialist">Inventory Specialist</option>
-            </select>
+        <div class="sso-provider-box">
+          <div class="provider-info">
+            <span class="provider-icon">🛡️</span>
+            <div>
+              <div class="provider-name">Enterprise Keycloak Identity Server</div>
+              <div class="provider-url">https://keycloak.energeek.id/realms/enterprise</div>
+            </div>
           </div>
+        </div>
 
-          <div class="modal-actions">
-            <BaseButton variant="ghost" type="button" @click="showLoginModal = false">Batal</BaseButton>
-            <BaseButton variant="primary" type="submit" icon="🚀">Masuk via Pinia</BaseButton>
-          </div>
-        </form>
+        <div class="form-group margin-top">
+          <label class="ui-input__label">Pilih Role / Hak Akses User</label>
+          <select v-model="selectedRole" class="role-select">
+            <option value="Admin">Admin (Superuser)</option>
+            <option value="Sales Manager">Sales Manager</option>
+            <option value="Inventory Specialist">Inventory Specialist</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <BaseButton variant="ghost" type="button" @click="showSSOModal = false">Batal</BaseButton>
+          <BaseButton variant="primary" type="button" icon="🚀" @click="handleSSOLogin">
+            Redirect to Keycloak SSO
+          </BaseButton>
+        </div>
+      </div>
+    </div>
+
+    <!-- JWT Token Details Modal -->
+    <div v-if="showTokenModal" class="modal-overlay" @click.self="showTokenModal = false">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <h3>📜 JWT Access Token Claims (Decoded OIDC Payload)</h3>
+          <button class="close-btn" @click="showTokenModal = false">✕</button>
+        </div>
+        <p class="modal-desc">
+          JWT Access Token ini disisipkan oleh Axios Interceptor ke HTTP Request Header ke seluruh Remote API:
+        </p>
+
+        <div class="bearer-box">
+          <span class="bearer-label">Authorization Header:</span>
+          <code>{{ authStore.bearerHeader }}</code>
+        </div>
+
+        <div class="json-code">
+          <pre><code>{{ JSON.stringify(authStore.user, null, 2) }}</code></pre>
+        </div>
+
+        <div class="modal-actions">
+          <BaseButton variant="primary" type="button" @click="showTokenModal = false">Tutup</BaseButton>
+        </div>
       </div>
     </div>
 
@@ -97,10 +129,10 @@
     <!-- Footer System Status Bar -->
     <footer class="footer-status">
       <div class="status-item">
-        <span class="dot active"></span> HOST Shell
+        <span class="dot active"></span> HOST Shell (OIDC Client)
       </div>
       <div class="status-item">
-        <span class="dot active"></span> Pinia Auth Store (HOST)
+        <span class="dot active"></span> SSO Pinia Store & Bearer Token
       </div>
       <div class="status-item">
         <span class="dot active"></span> Remote Master
@@ -116,22 +148,20 @@
 import { ref } from 'vue'
 import BaseButton from 'uiApp/Button'
 import BaseBadge from 'uiApp/Badge'
-import BaseInput from 'uiApp/Input'
 import { useAuthStore } from './store/auth'
-import type { UserProfile } from './store/auth'
 
 const authStore = useAuthStore()
-const showLoginModal = ref(false)
-const loginEmail = ref('bahrul@developer.com')
-const loginRole = ref<UserProfile['role']>('Admin')
+const showSSOModal = ref(false)
+const showTokenModal = ref(false)
+const selectedRole = ref('Admin')
 
-function handleLogin() {
-  authStore.login(loginEmail.value, loginRole.value)
-  showLoginModal.value = false
+function handleSSOLogin() {
+  authStore.loginWithSSO(selectedRole.value)
+  showSSOModal.value = false
 }
 
 function handleLogout() {
-  authStore.logout()
+  authStore.logoutSSO()
 }
 </script>
 
@@ -235,7 +265,7 @@ body {
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
+  gap: 0.75rem;
 }
 
 .user-pill {
@@ -246,6 +276,7 @@ body {
   border: 1px solid #e2e8f0;
   padding: 0.3rem 0.75rem;
   border-radius: 9999px;
+  cursor: pointer;
 }
 
 .user-avatar {
@@ -264,6 +295,40 @@ body {
   color: #1e293b;
 }
 
+.sso-provider-box {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.875rem 1rem;
+  margin-top: 1rem;
+}
+
+.provider-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.provider-icon {
+  font-size: 1.5rem;
+}
+
+.provider-name {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.provider-url {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.margin-top {
+  margin-top: 1rem;
+}
+
 .role-select {
   width: 100%;
   padding: 0.625rem 0.875rem;
@@ -275,23 +340,38 @@ body {
   outline: none;
 }
 
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.bearer-box {
+  background: #0f172a;
+  color: #38bdf8;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-family: monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+  margin-bottom: 1rem;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
+.bearer-label {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.json-code pre {
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  overflow-x: auto;
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 }
 
 .main-content {
@@ -354,6 +434,10 @@ body {
   max-width: 480px;
   padding: 1.5rem;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-card.wide {
+  max-width: 650px;
 }
 
 .modal-header {
